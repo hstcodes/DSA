@@ -1,0 +1,86 @@
+#include <iostream>
+#include <unordered_map>
+#include <vector>
+#include <sstream>
+
+class Trie {
+public:
+    std::unordered_map<std::string, Trie*> children;
+    int v;
+
+    Trie(int val) : v(val) {}
+
+    bool insert(const std::string& w, int val) {
+        Trie* node = this;
+        std::vector<std::string> ps = split(w, '/');
+        for (size_t i = 1; i < ps.size() - 1; ++i) {
+            const std::string& p = ps[i];
+            if (node->children.find(p) == node->children.end()) {
+                return false;
+            }
+            node = node->children[p];
+        }
+        if (node->children.find(ps.back()) != node->children.end()) {
+            return false;
+        }
+        node->children[ps.back()] = new Trie(val);
+        return true;
+    }
+
+    int search(const std::string& w) {
+        Trie* node = this;
+        std::vector<std::string> ps = split(w, '/');
+        for (size_t i = 1; i < ps.size(); ++i) {
+            const std::string& p = ps[i];
+            if (node->children.find(p) == node->children.end()) {
+                return -1;
+            }
+            node = node->children[p];
+        }
+        return node->v;
+    }
+
+private:
+    std::vector<std::string> split(const std::string& s, char delimiter) {
+        std::vector<std::string> tokens;
+        std::string token;
+        std::istringstream tokenStream(s);
+        while (std::getline(tokenStream, token, delimiter)) {
+            tokens.push_back(token);
+        }
+        return tokens;
+    }
+};
+
+class FileSystem {
+private:
+    Trie trie;
+
+public:
+    FileSystem() {}
+
+    bool createPath(const std::string& path, int value) {
+        return trie.insert(path, value);
+    }
+
+    int get(const std::string& path) {
+        return trie.search(path);
+    }
+};
+
+int main() {
+    FileSystem fileSystem;
+
+    std::cout << std::boolalpha;  // to print 'true' instead of '1' for boolean values
+
+    std::cout << fileSystem.createPath("/a/b/c", 1) << std::endl;  // true
+    std::cout << fileSystem.get("/a/b/c") << std::endl;             // 1
+
+    std::cout << fileSystem.createPath("/a/d", 2) << std::endl;      // true
+    std::cout << fileSystem.get("/a/d") << std::endl;                // 2
+
+    std::cout << fileSystem.createPath("/a/b/c", 3) << std::endl;    // false (path already exists)
+    std::cout << fileSystem.createPath("/x/y/z", 4) << std::endl;    // false (parent path doesn't exist)
+
+    return 0;
+}
