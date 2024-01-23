@@ -1,0 +1,97 @@
+/*
+
+Approach:
+
+Count the frequency of each string in the array and store it in a HashMap where the string is the key and frequency as the value.
+Now, sort these keys according to their frequencies in ascending order, this is done to keep keys with the least frequencies at the top.
+The strings with equal frequencies are prioritized alphabetically, i.e., the string which is alphabetically greater has a higher priority.
+Delete the top N – K key-value pairs from the HashMap. By doing this the container is left with K keys with the highest frequencies, in reverse order.
+Print the strings stored in the HashMap.
+*/
+
+// C++ program for the above approach
+#include <bits/stdc++.h>
+using namespace std;
+
+// Function that returns list of K
+// most frequent strings
+map<string, int> Freq;
+class compare {
+public:
+bool operator()(string& a, string& b)
+{
+	if (a == b) {
+	return Freq[a] > Freq[b];
+	}
+	return a > b;
+}
+};
+vector<string> frequentWords(vector<string> arr, int K)
+{
+
+// Hash map to store the frequency
+// of each string
+map<string, int> Freq;
+
+// Set the default frequency of
+// each string 0
+for (auto word : arr) {
+	Freq[word]++;
+}
+
+// Using a priority queue to store
+// the strings in accordance of the
+// frequency and alphabetical order
+// (if frequency is equal)
+
+// Lambda expression is used set the
+// priority, if frequencies are not
+// equal than the string with greater
+// frequency is returned else the
+// string which is lexically smaller
+// is returned
+priority_queue<string, vector<string>, compare> Order;
+
+// Traverse the HashMap
+for (auto it : Freq) {
+	Order.push(it.first);
+
+	// Remove top (N - K) elements
+	if (Order.size() > K) {
+	Order.pop();
+	}
+}
+
+// Order queue has K most frequent
+// strings in a reverse order
+vector<string> ans;
+while (Order.size()) {
+	ans.push_back(Order.top());
+	Order.pop();
+}
+
+// Reverse the ArrayList so as
+// to get in the desired order
+reverse(ans.begin(), ans.end());
+
+return ans;
+}
+
+// Driver Code
+int main()
+{
+int N = 3, K = 2;
+
+// Given array
+vector<string> arr{ "car", "bus", "car" };
+
+// Function Call
+vector<string> ans = frequentWords(arr, K);
+
+// Print the K most occurring strings
+for (auto it : ans) {
+	cout << it << endl;
+}
+}
+
+// This code is contributed by garg28harsh.
