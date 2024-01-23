@@ -1,0 +1,58 @@
+#include <iostream>
+#include <vector>
+#include <unordered_map>
+#include <algorithm>
+
+struct FileInfo {
+    std::string fileName;
+    std::string collection;
+    int fileSize;
+};
+
+bool compareCollections(const std::pair<std::string, int>& a, const std::pair<std::string, int>& b) {
+    return a.second > b.second;
+}
+
+int main() {
+    int N; // Number of top collections to display
+    std::cout << "Enter the value of N: ";
+    std::cin >> N;
+
+    std::vector<FileInfo> files;
+    std::unordered_map<std::string, int> collectionSizes;
+
+    // Input file information
+    int numFiles;
+    std::cout << "Enter the number of files: ";
+    std::cin >> numFiles;
+
+    std::cout << "Enter file information (fileName collection fileSize):" << std::endl;
+    for (int i = 0; i < numFiles; ++i) {
+        FileInfo file;
+        std::cin >> file.fileName >> file.collection >> file.fileSize;
+
+        // Update collection size
+        collectionSizes[file.collection] += file.fileSize;
+
+        files.push_back(file);
+    }
+
+    // Sort collections by size
+    std::vector<std::pair<std::string, int>> sortedCollections(collectionSizes.begin(), collectionSizes.end());
+    std::sort(sortedCollections.begin(), sortedCollections.end(), compareCollections);
+
+    // Display top N collections and total size
+    std::cout << "Top " << N << " collections by size:" << std::endl;
+    for (int i = 0; i < N && i < sortedCollections.size(); ++i) {
+        std::cout << sortedCollections[i].first << " - " << sortedCollections[i].second << " KB" << std::endl;
+    }
+
+    int totalSize = 0;
+    for (const auto& file : files) {
+        totalSize += file.fileSize;
+    }
+
+    std::cout << "Total size of all files: " << totalSize << " KB" << std::endl;
+
+    return 0;
+}
