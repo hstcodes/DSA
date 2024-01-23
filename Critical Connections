@@ -1,0 +1,94 @@
+/*
+An edge is a critical connection, if and only if it is not in a cycle.
+So, if we know how to find cycles, and discard all edges in the cycles, then the remaining connections are a complete collection of critical connections.
+
+How to find eges in cycles, and remove them
+We will use DFS algorithm to find cycles and decide whether or not an edge is in a cycle.
+
+Define rank of a node: The depth of a node during a DFS. The starting node has a rank 0.
+
+Only the nodes on the current DFS path have non-special ranks. In other words, only the nodes that we've started visiting, but haven't finished visiting, have ranks. So 0 <= rank < n.
+
+(For coding purpose, if a node is not visited yet, it has a special rank -2; if we've fully completed the visit of a node, it has a special rank n.)
+
+How can "rank" help us with removing cycles? Imagine you have a current path of length k during a DFS. The nodes on the path has increasing ranks from 0 to kand incrementing by 1. Surprisingly, your next visit finds a node that has a rank of p where 0 <= p < k. Why does it happen? Aha! You found a node that is on the current search path! That means, congratulations, you found a cycle!
+
+But only the current level of search knows it finds a cycle. How does the upper level of search knows, if you backtrack? Let's make use of the return value of DFS: dfs function returns the minimum rank it finds. During a step of search from node u to its neighbor v, if dfs(v) returns something smaller than or equal to rank(u), then u knows its neighbor v helped it to find a cycle back to u or u's ancestor. So u knows it should discard the edge (u, v) which is in a cycle.
+
+After doing dfs on all nodes, all edges in cycles are discarded. So the remaining edges are critical connections.
+
+A simplified C++ version below. The simplification is that instead of removing non-critical edges, it simply adds critical edges into the final result.
+Not a big difference but does making the code slightly easier.
+*/
+
+class Solution {
+public:
+    vector<vector<int>> criticalConnections(int n, vector<vector<int>>& connections) {
+        vector<int> graph[n];
+        for (auto& conn : connections) {
+            graph[conn[0]].push_back(conn[1]);
+            graph[conn[1]].push_back(conn[0]);
+        }
+        
+        int ranks[n];
+        fill_n(ranks, n, NO_RANK);
+        vector<vector<int>> result;
+        // Because whole graph is connected, there is no need to loop through every node.
+        criticalConnections(graph, n, 0, 0, ranks, result);        
+        
+        return result;
+    }
+private:
+    static const int NO_RANK;
+
+    int criticalConnections(vector<int> graph[], int n, int node, int myRank, int ranks[], vector<vector<int>>& result) {
+        if (ranks[node] != NO_RANK) {
+            return ranks[node];
+        }
+
+        int lowestRank = myRank;
+        ranks[node] = myRank;
+        for (auto neighbor : graph[node]) {
+            if (ranks[neighbor] == myRank - 1 || ranks[neighbor] == n) {
+                // ranks[neighbor] == myRank - 1:
+                // Do not go back immediately to parent, this will lead to
+                // parent-child-parent circle immediately.
+                // This is why NO_RANK is set to -2 instead of -1, because the first node of a recursion has myRank 0.
+                //
+                // ranks[neighbor] == n:
+                // Do not include node=>neighbor in the result. Reason:
+                // This can be explained from a couple of aspects:
+                // - This means neighbor has been finished, so neighbor=>node has been decided before neighbor is finished,
+                //   and if neighbor=>node is already decided, we don't need to make a decision on node=>neighbor because
+                //   it is undirected graph.
+                // - When neighbor=>node was decided, the decision must be "not include it in the result", because
+                //   node is an ancestor of neighbor, so neighbor=>node is a back edge, meaning at that time it already
+                //   detected that there is a cycle between neighbor and node, so that edge would not be included in the result.
+                continue;
+            }
+            
+            int neighborRank = criticalConnections(graph, n, neighbor, myRank + 1, ranks, result);
+            lowestRank = min(lowestRank, neighborRank);
+            if (neighborRank > myRank) {
+                result.push_back({min(node, neighbor), max(node, neighbor)});
+            }
+            
+        }
+        
+        ranks[node] = n;
+        return lowestRank;
+    }
+};
+
+const int Solution::NO_RANK = -2;
+
+
+/*
+Complexity analysis
+DFS time complexity is O(|E| + |V|), attempting to visit each edge at most twice. (the second attempt will immediately return.)
+As the graph is always a connected graph, |E| >= |V|.
+
+So, time complexity = O(|E|).
+
+Space complexity = O(graph) + O(rank) + O(connections) = 3 * O(|E| + |V|) = O(|E|).
+
