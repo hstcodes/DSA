@@ -1,0 +1,113 @@
+To handle nested collections, you can modify the program to use a recursive approach for calculating the sizes of nested collections. 
+The idea is to update the collectionSizes map recursively, taking into account the nested structure. 
+Additionally, you'll need to modify the sorting and displaying parts to properly handle nested collections.
+
+Here's a step-by-step explanation:
+
+Modify collectionSizes to store nested collections:
+Instead of a simple std::unordered_map<std::string, int> for collectionSizes, 
+you can use a nested std::unordered_map<std::string, std::pair<int, std::unordered_map<std::string, int>>>
+where the second int in the pair represents the direct size of the current collection, and the nested std::unordered_map represents the sizes of nested collections.
+
+Update the input loop to handle nested collections:
+When reading file information, split the collection string into nested levels. 
+For example, if a file belongs to "/parent/child", split it into two parts - "parent" and "child".
+
+Update the recursive collection size calculation:
+When updating the collectionSizes map, use a recursive function to navigate through the nested structure and update the sizes accordingly.
+
+Modify the sorting and displaying parts:
+The sorting and displaying parts need to be adjusted to handle nested collections. 
+You may need a recursive function to traverse the nested structure, sort the collections at each level, and display them properly.
+
+
+#include <iostream>
+#include <vector>
+#include <unordered_map>
+#include <algorithm>
+
+struct FileInfo {
+    std::string fileName;
+    std::string collection;
+    int fileSize;
+};
+
+// Updated structure to handle nested collections
+struct CollectionInfo {
+    int directSize;
+    std::unordered_map<std::string, CollectionInfo> nestedCollections;
+};
+
+bool compareCollections(const std::pair<std::string, CollectionInfo>& a, const std::pair<std::string, CollectionInfo>& b) {
+    return a.second.directSize > b.second.directSize;
+}
+
+void updateCollectionSizes(std::unordered_map<std::string, CollectionInfo>& collectionSizes, const std::string& collection, int fileSize) {
+    std::vector<std::string> nestedCollections;
+    std::istringstream iss(collection);
+    std::string nestedCollection;
+    
+    while (std::getline(iss, nestedCollection, '/')) {
+        nestedCollections.push_back(nestedCollection);
+    }
+
+    CollectionInfo* currentCollection = &collectionSizes[nestedCollections[0]];
+
+    for (size_t i = 1; i < nestedCollections.size(); ++i) {
+        currentCollection = &currentCollection->nestedCollections[nestedCollections[i]];
+    }
+
+    currentCollection->directSize += fileSize;
+}
+
+void displayCollections(const std::unordered_map<std::string, CollectionInfo>& collectionSizes, int depth = 0) {
+    std::vector<std::pair<std::string, CollectionInfo>> sortedCollections(collectionSizes.begin(), collectionSizes.end());
+    std::sort(sortedCollections.begin(), sortedCollections.end(), compareCollections);
+
+    for (const auto& pair : sortedCollections) {
+        for (int i = 0; i < depth; ++i) {
+            std::cout << "  ";  // Adjust spacing for nested collections
+        }
+        std::cout << pair.first << " - " << pair.second.directSize << " KB" << std::endl;
+
+        displayCollections(pair.second.nestedCollections, depth + 1);
+    }
+}
+
+int main() {
+    int N; // Number of top collections to display
+    std::cout << "Enter the value of N: ";
+    std::cin >> N;
+
+    std::vector<FileInfo> files;
+    std::unordered_map<std::string, CollectionInfo> collectionSizes;
+
+    // Input file information
+    int numFiles;
+    std::cout << "Enter the number of files: ";
+    std::cin >> numFiles;
+
+    std::cout << "Enter file information (fileName collection fileSize):" << std::endl;
+    for (int i = 0; i < numFiles; ++i) {
+        FileInfo file;
+        std::cin >> file.fileName >> file.collection >> file.fileSize;
+
+        // Update collection sizes recursively
+        updateCollectionSizes(collectionSizes, file.collection, file.fileSize);
+
+        files.push_back(file);
+    }
+
+    // Display top N collections and total size
+    std::cout << "Top " << N << " collections by size:" << std::endl;
+    displayCollections(collectionSizes, 0);
+
+    int totalSize = 0;
+    for (const auto& file : files) {
+        totalSize += file.fileSize;
+    }
+
+    std::cout << "Total size of all files: " << totalSize << " KB" << std::endl;
+
+    return 0;
+}
