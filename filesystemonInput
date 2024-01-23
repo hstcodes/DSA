@@ -1,0 +1,80 @@
+#include <iostream>
+#include <vector>
+#include <unordered_map>
+#include <algorithm>
+
+using namespace std;
+
+struct FileInfo {
+    string fileName;
+    int fileSize;
+    vector<string> collections;
+};
+
+struct CollectionInfo {
+    int totalSize;
+    vector<string> files;
+};
+
+int calculateTotalSize(const vector<FileInfo>& fileData) {
+    int totalSize = 0;
+
+    for (const auto& file : fileData) {
+        totalSize += file.fileSize;
+    }
+
+    return totalSize;
+}
+
+vector<pair<string, int>> calculateTopCollections(const unordered_map<string, CollectionInfo>& collectionInfoMap, int k) {
+    vector<pair<string, int>> collectionSizeVector;
+
+    // Convert map to vector and sort by size in descending order
+    for (const auto& entry : collectionInfoMap) {
+        collectionSizeVector.emplace_back(entry.first, entry.second.totalSize);
+    }
+
+    sort(collectionSizeVector.begin(), collectionSizeVector.end(), [](const auto& a, const auto& b) {
+        return a.second > b.second;
+    });
+
+    // Get top K collections
+    vector<pair<string, int>> topCollections(collectionSizeVector.begin(), collectionSizeVector.begin() + min(k, static_cast<int>(collectionSizeVector.size())));
+
+    return topCollections;
+}
+
+int main() {
+    // Example file data
+    vector<FileInfo> fileData = {
+        {"file1.txt", 100, {}},
+        {"file2.txt", 200, {"collection1"}},
+        {"file3.txt", 200, {"collection1"}},
+        {"file4.txt", 300, {"collection2"}},
+        {"file5.txt", 100, {}},
+    };
+
+    unordered_map<string, CollectionInfo> collectionInfoMap;
+
+    // Process file data and update collectionInfoMap
+    for (const auto& file : fileData) {
+        for (const auto& collection : file.collections) {
+            collectionInfoMap[collection].totalSize += file.fileSize;
+            collectionInfoMap[collection].files.push_back(file.fileName);
+        }
+    }
+
+    // Calculate total size
+    int totalSize = calculateTotalSize(fileData);
+    cout << "Total size of files processed: " << totalSize << endl;
+
+    // Calculate top collections
+    int k = 2;
+    auto topCollections = calculateTopCollections(collectionInfoMap, k);
+    cout << "Top " << k << " collections:" << endl;
+    for (const auto& collection : topCollections) {
+        cout << "- " << collection.first << " : " << collection.second << endl;
+    }
+
+    return 0;
+}
